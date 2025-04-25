@@ -37,6 +37,21 @@ services:
     networks:
       - log-getter
 
+  grafana:
+    container_name: grafana
+    hostname: grafana
+    image: grafana/grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: test_password  # 보안을 위해 변경 필요
+      GF_SSL_STRICT: false  # 보안 설정 우회
+    ports:
+      - 3030:3000
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - log-getter
+
 networks:
   log-getter:
     driver: bridge
@@ -45,3 +60,4 @@ networks:
 
 volumes:
   log-data:
+  grafana-data
