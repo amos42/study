@@ -14,6 +14,17 @@ app.use(session({
     store: memoryStore
 }));
 
+// cors 설정
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+    }
+    next();
+});
+
 let keycloak;
 
 const kcConfig = {
@@ -21,18 +32,19 @@ const kcConfig = {
     "auth-server-url": "http://localhost:8080/",
     "ssl-required": "external",
     "resource": "test",
-    "credentials": {
-        "secret": "8QwyK9v2Mt5oVd7wQSjOywqmKZUOCUHg"
-    },
+    // "credentials": {
+    //     "secret": "8QwyK9v2Mt5oVd7wQSjOywqmKZUOCUHg"
+    // },
     "confidential-port": 0
 };
 
 keycloak = new Keycloak({store: memoryStore}, kcConfig);
 app.use(keycloak.middleware());
 
-app.get('/api/v1/users', keycloak.protect(), async (req, res) => {
+app.get('/api/v1/apps', keycloak.protect(), async (req, res) => {
+    console.log(req.kauth.grant.access_token.token)
     try {
-        const response = await axios.get('http://localhost:8000/api/v1/users', {
+        const response = await axios.get('http://localhost:8080/realms/master/account/applications', {
             headers: {
                 Authorization: `Bearer ${req.kauth.grant.access_token.token}`
             }
@@ -57,6 +69,6 @@ app.get('/js/:filename', (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
+app.listen(4000, () => {
+    console.log('Server is running on http://localhost:4000');
 });

@@ -1,48 +1,85 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useKeycloak } from '@react-keycloak/web';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useKeycloak } from "@react-keycloak/web";
 
 function App() {
-    const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const { keycloak } = useKeycloak();
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  //   const [userName, setUserName] = useState("<none>");
+  const { keycloak } = useKeycloak();
+  const [rols, setRols] = useState([]);
+  // const [profile, setProfile] = useState({});
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                //const response = await axios.get('http://localhost:3000/api/v1/users');
-                const response = await axios.get('http://localhost:8000/users', {
-                  headers: {
-                      Authorization: `Bearer ${keycloak.token}`
-                  }
-                });
-                //res.json(response.data);
-                setUsers(response.data);
-            } catch (error) {
-                setError(error);
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await axios.get("http://localhost:8000/apps", {
+          headers: {
+            Authorization: `Bearer ${keycloak.token}`,
+          },
+        });
+        setClients(response.data);
+      } catch (error) {
+        setError(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    // const fetchProfile = async () => {
+    //   try {
+    //     const response = await axios.get(`http://localhost:8000/users/${userId}`, {
+    //       headers: {
+    //         Authorization: `Bearer ${keycloak.token}`,
+    //       },
+    //     });
+    //     setProfile(response.data);
+    //   } catch (error) {
+    //     setError(error);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
 
-        // Keycloak 인증 후 세션 확인 및 사용자 목록 로드
-        fetchUsers();
-    }, []);
+    if (keycloak.authenticated && keycloak.token) {
+      const realmRoles = keycloak.realmAccess?.roles || [];
+      setRols(realmRoles);
+      
+      // fetchProfile();
+      fetchClients();
+    } else {
+      // 로그인 안된 상태 처리
+    }
+  }, [keycloak.authenticated, keycloak.token, keycloak.realmAccess?.roles]);
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error.message}</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
-    return (
-        <div>
-            <h1>User List</h1>
-            <ul>
-                {users.map(user => (
-                    <li key={user.id}>{user.name} - {user.email}</li>
-                ))}
-            </ul>
-        </div>
-    );
+  return (
+    <div>
+      <h2>User Info</h2>
+      <ul>
+        <li>
+          name:{" "}
+          {keycloak?.idTokenParsed.name ||
+            keycloak?.idTokenParsed.preferred_username}
+        </li>
+        <li>rols: {rols.join(", ")}</li>
+        <li>realm: {keycloak?.realm}</li>
+        <li>clientId: {keycloak?.clientId}</li>
+        <li>company: {keycloak?.idTokenParsed.company}</li>
+        <li>token: {keycloak?.token}</li>
+      </ul>
+      <h2>Client List</h2>
+      <ul>
+        {clients.map((client) => (
+          <li key={client.clientId}>
+            {client.clientId} - {client.effectiveUrl}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export default App;

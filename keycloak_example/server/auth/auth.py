@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, HTTPBearer
 from keycloak import KeycloakOpenID
 from typing import Optional, Dict
-import httpx
 
 router = APIRouter()
 
@@ -20,7 +19,7 @@ keycloak_openid = KeycloakOpenID(
     server_url="http://localhost:8080/",
     client_id="test",
     realm_name="master",
-    client_secret_key="8QwyK9v2Mt5oVd7wQSjOywqmKZUOCUHg"
+    # client_secret_key="8QwyK9v2Mt5oVd7wQSjOywqmKZUOCUHg"
 )
 
 #oauth_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -33,9 +32,11 @@ oauth_scheme = HTTPBearer()
 
 # Keycloak에서 토큰을 검증하는 함수
 async def get_user_from_token(token: str = Depends(oauth_scheme)) -> Dict:
-    try:
+    try:        
         # 토큰 검증
-        info = keycloak_openid.decode_token(token, keycloak_openid.certs(), options={'verify_signature': True, 'verify_aud': True, 'exp': True})
+        # info = keycloak_openid.decode_token(token, keycloak_openid.certs(), options={'verify_signature': True, 'verify_aud': True, 'exp': True})
+        info = keycloak_openid.userinfo(token.credentials)
+        # print(info)
         return info
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Token: {e}", headers={"WWW-Authenticate": "Bearer"})
