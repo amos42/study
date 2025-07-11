@@ -1,7 +1,10 @@
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, HTTPBearer
 from keycloak import KeycloakOpenID
 from typing import Optional, Dict
+
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -30,13 +33,19 @@ oauth_scheme = HTTPBearer()
 #async def startup_event():
 #    await idp.init()
 
+class User(BaseModel):
+    id: str | None = None
+    sub: UUID | None = None
+    email_verified: bool | None = None
+    preferred_username: str | None = None
+
 # Keycloak에서 토큰을 검증하는 함수
-async def get_user_from_token(token: str = Depends(oauth_scheme)) -> Dict:
+async def get_user_from_token(token: str = Depends(oauth_scheme)) -> User:
     try:        
         # 토큰 검증
         # info = keycloak_openid.decode_token(token, keycloak_openid.certs(), options={'verify_signature': True, 'verify_aud': True, 'exp': True})
         info = keycloak_openid.userinfo(token.credentials)
         # print(info)
-        return info
+        return User(**info)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Token: {e}", headers={"WWW-Authenticate": "Bearer"})

@@ -9,7 +9,7 @@ function App() {
   //   const [userName, setUserName] = useState("<none>");
   const { keycloak } = useKeycloak();
   const [rols, setRols] = useState([]);
-  // const [profile, setProfile] = useState({});
+  const [profile, setProfile] = useState({});
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -26,26 +26,28 @@ function App() {
         setLoading(false);
       }
     };
-    // const fetchProfile = async () => {
-    //   try {
-    //     const response = await axios.get(`http://localhost:8000/users/${userId}`, {
-    //       headers: {
-    //         Authorization: `Bearer ${keycloak.token}`,
-    //       },
-    //     });
-    //     setProfile(response.data);
-    //   } catch (error) {
-    //     setError(error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
+    const fetchProfile = async () => {
+      try {
+        console.log(keycloak)
+        const response = await axios.get(`http://localhost:8000/users/${keycloak.subject}`, {
+          headers: {
+            Authorization: `Bearer ${keycloak.token}`,
+          },
+        });
+        setProfile(response.data);
+        console.log(profile)
+      } catch (error) {
+        setError(error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     if (keycloak.authenticated && keycloak.token) {
       const realmRoles = keycloak.realmAccess?.roles || [];
       setRols(realmRoles);
       
-      // fetchProfile();
+      fetchProfile();
       fetchClients();
     } else {
       // 로그인 안된 상태 처리
@@ -67,7 +69,8 @@ function App() {
         <li>rols: {rols.join(", ")}</li>
         <li>realm: {keycloak?.realm}</li>
         <li>clientId: {keycloak?.clientId}</li>
-        <li>company: {keycloak?.idTokenParsed.company}</li>
+        <li>company: {profile.attributes.company}</li>
+        <li>department: {profile.attributes.department}</li>
         <li>token: {keycloak?.token}</li>
       </ul>
       <h2>Client List</h2>

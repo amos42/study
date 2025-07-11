@@ -1,15 +1,9 @@
+from typing import Any
 from uuid import UUID
 from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel
-from auth.auth import get_user_from_token
+from auth.auth import User, get_user_from_token
 import requests
-
-class User(BaseModel):
-    id: int
-    sub: UUID | None = None
-    email_verified: bool | None = None
-    preferred_username: str | None = None
-    company: str | None = None
 
 router = APIRouter()
 
@@ -22,15 +16,34 @@ def create_user(name: str, email: str, user_info: User = Depends(get_user_from_t
     return {"message": "사용자 생성", "name": name, "email": email, "created_by": user_info.username}
 
 @router.get("/{user_id}")
-def read_user(user_id: int, user_info: User = Depends(get_user_from_token), authorization: str = Header(None)) -> User:
+def read_user(user_id: str, user_info: User = Depends(get_user_from_token), authorization: str = Header(None)) -> Any:
     headers = {
         "Content-Type": "application/json",
         "Authorization": authorization
     }
     response = requests.request(
-        "get", f"http://localhost:8080/{user_id}/realms/master/users/profile",
+        "get", f"http://localhost:8080/admin/realms/master/users/{user_id}",
         headers=headers
     )
-    # print(response.content)
+    
+    return response.json()
+
+@router.put("/{user_id}")
+def update_user(user_id: str, user_info: User = Depends(get_user_from_token), authorization: str = Header(None)) -> Any:
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": authorization
+    }
+    response = requests.request(
+        "put", f"http://localhost:8080/admin/realms/master/users/{user_id}",
+        headers=headers,
+        json={
+            "attributes": {
+                "company": "S-Core",
+                "department": "Employee"
+            }
+        }
+    )
+    
     return response.json()
 
