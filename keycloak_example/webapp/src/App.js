@@ -47,6 +47,8 @@ function App() {
       const realmRoles = keycloak.realmAccess?.roles || [];
       setRols(realmRoles);
       
+      // console.log(keycloak);
+
       fetchProfile();
       fetchClients();
     } else {
@@ -66,6 +68,7 @@ function App() {
           {keycloak?.idTokenParsed.name ||
             keycloak?.idTokenParsed.preferred_username}
         </li>
+        <li>id: {keycloak?.subject}</li>
         <li>rols: {rols.join(", ")}</li>
         <li>realm: {keycloak?.realm}</li>
         <li>clientId: {keycloak?.clientId}</li>
