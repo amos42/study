@@ -6,6 +6,8 @@ from keycloak import KeycloakAdmin, KeycloakOpenID
 from keycloak.exceptions import KeycloakError
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from fastapi import Query
+
 
 # .env 파일에서 환경 변수 로드
 load_dotenv()
@@ -77,13 +79,28 @@ class UserAttributes(BaseModel):
     attributes: dict
 
 @app.get("/api/users")
-async def get_users(current_user = Depends(get_current_user)):
-    """모든 사용자의 목록을 반환합니다."""
+async def get_users(
+    current_user = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100)
+):
+    """모든 사용자의 목록을 페이지네이션하여 반환합니다."""
     keycloak_admin = get_keycloak_admin(current_user.token)
     try:
-        users = keycloak_admin.get_users({})
-        # 필요한 정보만 추출하여 반환 (id, username, email, attributes)
-        return [{"id": u["id"], "username": u.get("username"), "email": u.get("email"), "attributes": u.get("attributes", {})} for u in users]
+        start = (page - 1) * page_size
+        users = keycloak_admin.get_users({"first": start, "max": page_size})
+        total_users = len(keycloak_admin.get_users({}))
+        sessions = keycloak_admin.get_client_all_sessions("93ada6fb-5463-4469-bb9b-41492274f23d")
+        active_user_ids = set(session['userId'] for session in sessions)
+        active_users = len(active_user_ids)
+
+        return {
+            "total_users": total_users,
+            "active_users": active_users,
+            "page": page,
+            "page_size": page_size,
+            "users": [{"id": u["id"], "username": u.get("username"), "email": u.get("email"), "enabled": u.get("enabled", True), "attributes": u.get("attributes", {})} for u in users]
+        }
     except KeycloakError as e:
         raise HTTPException(status_code=e.response_code, detail=str(e))
 
@@ -96,6 +113,43 @@ async def get_user_details(user_id: str, current_user = Depends(get_current_user
         return user
     except KeycloakError as e:
         raise HTTPException(status_code=e.response_code, detail=str(e))
+
+@app.get("/api/users/{user_id}/login-history")
+async def get_user_login_history(
+    user_id: str,
+    current_user = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100)
+):
+    """
+    특정 사용자의 로그인 이력을 페이지네이션하여 반환합니다.
+    (Keycloak 세션 정보를 기반으로 하며, 실제 로그인 이력과는 다를 수 있습니다.)
+    """
+    keycloak_admin = get_keycloak_admin(current_user.token)
+    try:
+        start = (page - 1) * page_size
+        evetns = keycloak_admin.get_events({"user":user_id, "type":"LOGIN", "first": start, "max": page_size})
+        # 세션 정보에서 timestamp, ipAddress 추출
+        history = []
+        for s in evetns:
+            history.append({
+                "time": s.get("time"),
+                "clientId": s.get("clientId"),
+                "ip": s.get("ipAddress")
+            })
+        total_history = len(keycloak_admin.get_events({"user":user_id, "type":"LOGIN"}))
+        # end = start + page_size
+        # paged_history = history[start:end]
+        return {
+            "total_history": total_history,
+            "page": page,
+            "page_size": page_size,
+            "history": history
+        }
+    except KeycloakError as e:
+        raise HTTPException(status_code=e.response_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.put("/api/users/{user_id}")
 async def update_user_attributes(user_id: str, user_attributes: UserAttributes, current_user = Depends(get_current_user)):

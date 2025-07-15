@@ -27,6 +27,18 @@
                 "--reload"
             ],
             "jinja": true
+        },
+        {
+            "name": "User Manager Launch Server",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "cwd":"${workspaceFolder}/userman/backend",
+            "args": [
+                "main:app",
+                "--reload"
+            ],
+            "jinja": true
         }
     ]
 }
