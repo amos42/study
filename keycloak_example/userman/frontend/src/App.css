@@ -38,6 +38,6 @@
 }
 
 .disabled-row {
-  background-color: #e0e0e0 !important;
+  background-color: gray !important;
   color: red !important;
 }

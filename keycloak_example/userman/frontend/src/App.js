@@ -110,7 +110,11 @@ function App() {
 
     // 속성 변경 핸들러
     const handleAttributeChange = (key, value) => {
-        setEditAttributes(prev => ({ ...prev, [key]: value }));
+        if (key === 'enabled') {
+            setEditAttributes(prev => ({ ...prev, [key]: !prev[key] }));
+        } else {
+            setEditAttributes(prev => ({ ...prev, [key]: value }));
+        }
     };
     
     // 속성 저장 핸들러
@@ -173,10 +177,8 @@ function App() {
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
-                            <th>상태</th>
                             <th>Email</th>
-                            <th>수정</th>
-                            <th>이력</th>
+                            <th>기타</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -186,17 +188,15 @@ function App() {
                                 className={user.enabled === false ? "disabled-row" : ""}
                             >
                                 <td>{user.id}</td>
-                                <td>{user.username}</td>
-                                <td>{user.enabled === false ? 'disable' : 'enable'}</td>
+                                <td style={{ color: user.enabled === false ? 'red' : 'inherit' }}>{user.username}{user.enabled === false ? " (disabled)" : ""}</td>
                                 <td>{user.email}</td>
                                 <td>
-                                    <Button variant="primary" onClick={() => handleEditClick(user)}>
-                                        속성 편집
+                                    <Button size="sm" onClick={() => handleEditClick(user)}>
+                                        속성
                                     </Button>
-                                </td>
-                                <td>
-                                    <Button variant="info" size="sm" onClick={() => handleHistoryClick(user)}>
-                                        접속 이력
+                                    &nbsp;
+                                    <Button size="sm" onClick={() => handleHistoryClick(user)}>
+                                        접속이력
                                     </Button>
                                 </td>
                             </tr>
@@ -267,6 +267,14 @@ function App() {
                                     type="text"
                                     value={editAttributes.department}
                                     onChange={(e) => handleAttributeChange("department", e.target.value)}
+                                />
+                            </Form.Group>
+                            <Form.Group key="enabled" className="mb-3">
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Enabled"
+                                    checked={selectedUser?.enabled}
+                                    onChange={(e) => handleAttributeChange("enabled", e.target.checked)}
                                 />
                             </Form.Group>
                         </Form>
