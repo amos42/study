@@ -40,26 +40,26 @@ function App() {
   // 로그인 이력 관련 상태
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [loginHistory, setLoginHistory] = useState([]);
+  const [loginHistoryIndex, setLoginHistoryIndex] = useState(1);
   const [historyUser, setHistoryUser] = useState(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   // Pagination state for login history
-  const [historyPage, setHistoryPage] = useState(1);
   const HISTORY_PAGE_SIZE = 20;
 
   // 로그인 이력 불러오기 (페이지네이션 적용)
-  const fetchLoginHistory = async (userId, page = 1) => {
+  const fetchLoginHistory = async (userId, start = 1) => {
     setIsHistoryLoading(true);
     try {
       const response = await axiosInstance.get(
         `/api/users/${userId}/login-history`,
         {
-          params: { page, page_size: HISTORY_PAGE_SIZE + 1 },
+          params: { start, page_size: HISTORY_PAGE_SIZE + 1 }, // 바운더리 체크를 위해 1개를 더 읽는다.
         }
       );
       let fetchedHistory = response.data.history || [];
       setHasMore(fetchedHistory.length > HISTORY_PAGE_SIZE);
       setLoginHistory(fetchedHistory.slice(0, HISTORY_PAGE_SIZE));
-      setHistoryPage(response.data.page || 1);
+      setLoginHistoryIndex(start || 1);
     } catch (err) {
       setLoginHistory([]);
       setError("로그인 이력을 불러오는 데 실패했습니다.");
@@ -99,9 +99,9 @@ function App() {
   };
 
   // 로그인 이력 페이지 변경 핸들러
-  const handleHistoryPageChange = (newPage) => {
+  const handleHistoryPageChange = (newIndex) => {
     if (historyUser) {
-      fetchLoginHistory(historyUser.id, newPage);
+      fetchLoginHistory(historyUser.id, Math.max(newIndex, 0));
     }
   };
 
@@ -342,7 +342,7 @@ function App() {
               <>
                 <ul>
                   {loginHistory.map((item, idx) => (
-                    <li key={idx + (historyPage - 1) * HISTORY_PAGE_SIZE}>
+                    <li key={idx + loginHistoryIndex}>
                       {item.time} - {item.clientId || ""} - {item.ip || ""}
                     </li>
                   ))}
@@ -358,21 +358,19 @@ function App() {
                   <Button
                     variant="outline-secondary"
                     size="sm"
-                    disabled={historyPage === 1}
-                    onClick={() => handleHistoryPageChange(historyPage - 1)}
+                    disabled={loginHistoryIndex <= 1}
+                    onClick={() => handleHistoryPageChange(loginHistoryIndex - HISTORY_PAGE_SIZE)}
                   >
                     이전
                   </Button>
                   <span>
-                    {(historyPage - 1) * HISTORY_PAGE_SIZE + 1} -{" "}
-                    {(historyPage - 1) * HISTORY_PAGE_SIZE +
-                      loginHistory.length}
+                    {loginHistoryIndex} - {loginHistoryIndex + loginHistory.length - 1}
                   </span>
                   <Button
                     variant="outline-secondary"
                     size="sm"
                     disabled={!hasMore}
-                    onClick={() => handleHistoryPageChange(historyPage + 1)}
+                    onClick={() => handleHistoryPageChange(loginHistoryIndex + loginHistory.length)}
                   >
                     다음
                   </Button>

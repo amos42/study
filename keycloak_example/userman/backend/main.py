@@ -118,7 +118,7 @@ async def get_user_details(user_id: str, current_user = Depends(get_current_user
 async def get_user_login_history(
     user_id: str,
     current_user = Depends(get_current_user),
-    page: int = Query(1, ge=1),
+    start: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100)
 ):
     """
@@ -127,7 +127,6 @@ async def get_user_login_history(
     """
     keycloak_admin = get_keycloak_admin(current_user.token)
     try:
-        start = (page - 1) * page_size
         evetns = keycloak_admin.get_events({"user":user_id, "type":"LOGIN", "first": start, "max": page_size})
         # 세션 정보에서 timestamp, ipAddress 추출
         history = []
@@ -142,7 +141,7 @@ async def get_user_login_history(
         # paged_history = history[start:end]
         return {
             "total_history": total_history,
-            "page": page,
+            "start": start,
             "page_size": page_size,
             "history": history
         }
