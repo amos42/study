@@ -13,7 +13,7 @@ import {
 import keycloak from "./keycloak";
 
 // 백엔드 API 주소
-const API_URL = "http://localhost:8000";
+const API_URL = "http://localhost:9000";
 
 // 인증된 axios 인스턴스 생성
 const axiosInstance = axios.create({

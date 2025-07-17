@@ -16,6 +16,7 @@ load_dotenv()
 KEYCLOAK_SERVER_URL = os.getenv("KEYCLOAK_SERVER_URL")
 KEYCLOAK_REALM_NAME = os.getenv("KEYCLOAK_REALM_NAME")
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
+KEYCLOAK_CLIENT_UUID = os.getenv("KEYCLOAK_CLIENT_UUID")
 KEYCLOAK_ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USER")
 KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD")
 
@@ -44,6 +45,8 @@ keycloak_openid = KeycloakOpenID(
 # OAuth2 스킴 정의
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+keycloak_admin_data: KeycloakAdmin | None = None
+
 class UserInfo(BaseModel):
     user_info: dict
     token: str
@@ -58,10 +61,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInfo:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-def get_keycloak_admin(authorization: str | None = None):
+def get_keycloak_admin(authorization: str | None = None) -> KeycloakAdmin:
     """Keycloak Admin 클라이언트를 생성하고 반환합니다."""
+    global keycloak_admin_data
     try:
-        keycloak_admin = KeycloakAdmin(
+        if keycloak_admin_data:
+            return keycloak_admin_data
+        keycloak_admin_data = KeycloakAdmin(
             server_url=KEYCLOAK_SERVER_URL,
             username=KEYCLOAK_ADMIN_USER,
             password=KEYCLOAK_ADMIN_PASSWORD,
@@ -70,9 +76,10 @@ def get_keycloak_admin(authorization: str | None = None):
             token={"access_token":authorization, "expires_in": 0},
             verify=True
         )
-        return keycloak_admin
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Keycloak 연결 실패: {str(e)}")
+
+    return keycloak_admin_data
 
 class UserAttributes(BaseModel):
     email: str
@@ -89,8 +96,10 @@ async def get_users(
     try:
         start = (page - 1) * page_size
         users = keycloak_admin.get_users({"first": start, "max": page_size})
-        total_users = len(keycloak_admin.get_users({}))
-        sessions = keycloak_admin.get_client_all_sessions("93ada6fb-5463-4469-bb9b-41492274f23d")
+        total_users = keycloak_admin.users_count({})
+        sessions0 = keycloak_admin.get_client_sessions_stats()
+        print(sessions0)
+        sessions = keycloak_admin.get_client_all_sessions(client_id=KEYCLOAK_CLIENT_UUID)
         active_user_ids = set(session['userId'] for session in sessions)
         active_users = len(active_user_ids)
 
@@ -162,6 +171,13 @@ async def update_user_attributes(user_id: str, user_attributes: UserAttributes, 
     except KeycloakError as e:
         raise HTTPException(status_code=e.response_code, detail=str(e))
 
+@app.post("/logs")
+async def receive_logs(log: any):
+    """Receives JBoss logs via POST request and prints them to the console."""
+    print(f"Received log: {log}")
+    return {"status": "log received"}
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=9000)
