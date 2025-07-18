@@ -87,6 +87,7 @@ def get_keycloak_admin(authorization: str | None = None) -> KeycloakAdmin:
 
 class UserAttributes(BaseModel):
     email: str
+    enabled: bool
     attributes: dict
 
 @app.get("/api/users")
@@ -127,6 +128,18 @@ async def get_user_details(user_id: str, current_user = Depends(get_current_user
     except KeycloakError as e:
         raise HTTPException(status_code=e.response_code, detail=str(e))
 
+@app.put("/api/users/{user_id}")
+async def update_user_attributes(user_id: str, user_attributes: UserAttributes, current_user = Depends(get_current_user)):
+    """특정 사용자의 속성을 업데이트합니다."""
+    keycloak_admin = get_keycloak_admin(current_user.token)
+    try:
+        # 사용자 정보 페이로드 구성
+        payload = {"email": user_attributes.email, "enabled": user_attributes.enabled, "attributes": user_attributes.attributes}
+        keycloak_admin.update_user(user_id=user_id, payload=payload)
+        return {"message": f"사용자 {user_id}의 속성이 성공적으로 업데이트되었습니다."}
+    except KeycloakError as e:
+        raise HTTPException(status_code=e.response_code, detail=str(e))
+
 @app.get("/api/users/{user_id}/login-history")
 async def get_user_login_history(
     user_id: str,
@@ -154,18 +167,6 @@ async def get_user_login_history(
         raise HTTPException(status_code=e.response_code, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.put("/api/users/{user_id}")
-async def update_user_attributes(user_id: str, user_attributes: UserAttributes, current_user = Depends(get_current_user)):
-    """특정 사용자의 속성을 업데이트합니다."""
-    keycloak_admin = get_keycloak_admin(current_user.token)
-    try:
-        # 사용자 정보 페이로드 구성
-        payload = {"email": user_attributes.email, "attributes": user_attributes.attributes}
-        keycloak_admin.update_user(user_id=user_id, payload=payload)
-        return {"message": f"사용자 {user_id}의 속성이 성공적으로 업데이트되었습니다."}
-    except KeycloakError as e:
-        raise HTTPException(status_code=e.response_code, detail=str(e))
 
 # @app.post("/logs")
 # async def receive_logs(log: any):

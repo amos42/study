@@ -110,7 +110,7 @@ function App() {
     setSelectedUser(user);
     setEditAttributes({
       email: user.email || "",
-      enabled: user.enabled,
+      enabled: !!user.enabled,
       company: user.attributes?.company?.[0] || "",
       department: user.attributes?.department?.[0] || "",
     });
