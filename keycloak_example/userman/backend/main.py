@@ -7,6 +7,7 @@ from keycloak.exceptions import KeycloakError
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from fastapi import Query
+# import requests
 
 
 # .env 파일에서 환경 변수 로드
@@ -17,8 +18,10 @@ KEYCLOAK_SERVER_URL = os.getenv("KEYCLOAK_SERVER_URL")
 KEYCLOAK_REALM_NAME = os.getenv("KEYCLOAK_REALM_NAME")
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
 KEYCLOAK_CLIENT_UUID = os.getenv("KEYCLOAK_CLIENT_UUID")
+KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 KEYCLOAK_ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USER")
 KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD")
+KEYCLOAK_FRONTEND_CLIENT_ID = os.getenv("KEYCLOAK_FRONTEND_CLIENT_ID")
 
 # FastAPI 앱 생성
 app = FastAPI()
@@ -73,6 +76,7 @@ def get_keycloak_admin(authorization: str | None = None) -> KeycloakAdmin:
             password=KEYCLOAK_ADMIN_PASSWORD,
             realm_name=KEYCLOAK_REALM_NAME,
             client_id=KEYCLOAK_CLIENT_ID,
+            client_secret_key=KEYCLOAK_CLIENT_SECRET,
             token={"access_token":authorization, "expires_in": 0},
             verify=True
         )
@@ -97,8 +101,8 @@ async def get_users(
         start = (page - 1) * page_size
         users = keycloak_admin.get_users({"first": start, "max": page_size})
         total_users = keycloak_admin.users_count({})
-        sessions0 = keycloak_admin.get_client_sessions_stats()
-        print(sessions0)
+        # sessions0 = keycloak_admin.get_client_sessions_stats()
+        # print(sessions0)
         sessions = keycloak_admin.get_client_all_sessions(client_id=KEYCLOAK_CLIENT_UUID)
         active_user_ids = set(session['userId'] for session in sessions)
         active_users = len(active_user_ids)
@@ -134,25 +138,17 @@ async def get_user_login_history(
     특정 사용자의 로그인 이력을 페이지네이션하여 반환합니다.
     (Keycloak 세션 정보를 기반으로 하며, 실제 로그인 이력과는 다를 수 있습니다.)
     """
-    keycloak_admin = get_keycloak_admin(current_user.token)
     try:
-        evetns = keycloak_admin.get_events({"user":user_id, "type":"LOGIN", "first": start, "max": page_size})
-        # 세션 정보에서 timestamp, ipAddress 추출
-        history = []
-        for s in evetns:
-            history.append({
-                "time": s.get("time"),
-                "clientId": s.get("clientId"),
-                "ip": s.get("ipAddress")
-            })
-        total_history = len(keycloak_admin.get_events({"user":user_id, "type":"LOGIN"}))
-        # end = start + page_size
-        # paged_history = history[start:end]
+        keycloak_admin = get_keycloak_admin(current_user.token)
+        events = keycloak_admin.get_events({"user":user_id, "client":KEYCLOAK_FRONTEND_CLIENT_ID, "type":["LOGIN","LOGOUT","LOGIN_ERROR"], "direction":"desc", "first": start, "max": page_size})
+        # response = requests.get(f"http://localhost:8080/admin/realms/master/events?user={user_id}&type=LOGIN&type=LOGOUT&type=LOGIN_ERROR&first={start}&max={page_size}",
+        #                         headers={"Authorization": f"Bearer {current_user.token}"})
+        # events = response.json()
+
         return {
-            "total_history": total_history,
             "start": start,
             "page_size": page_size,
-            "history": history
+            "history": events
         }
     except KeycloakError as e:
         raise HTTPException(status_code=e.response_code, detail=str(e))
@@ -171,11 +167,11 @@ async def update_user_attributes(user_id: str, user_attributes: UserAttributes, 
     except KeycloakError as e:
         raise HTTPException(status_code=e.response_code, detail=str(e))
 
-@app.post("/logs")
-async def receive_logs(log: any):
-    """Receives JBoss logs via POST request and prints them to the console."""
-    print(f"Received log: {log}")
-    return {"status": "log received"}
+# @app.post("/logs")
+# async def receive_logs(log: any):
+#     """Receives JBoss logs via POST request and prints them to the console."""
+#     print(f"Received log: {log}")
+#     return {"status": "log received"}
 
 
 if __name__ == "__main__":

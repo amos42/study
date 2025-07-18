@@ -44,7 +44,7 @@ function App() {
   const [historyUser, setHistoryUser] = useState(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   // Pagination state for login history
-  const HISTORY_PAGE_SIZE = 20;
+  const HISTORY_PAGE_SIZE = 10;
 
   // 로그인 이력 불러오기 (페이지네이션 적용)
   const fetchLoginHistory = async (userId, start = 1) => {
@@ -329,6 +329,7 @@ function App() {
         <Modal
           show={showHistoryModal}
           onHide={() => setShowHistoryModal(false)}
+          size="lg"
         >
           <Modal.Header closeButton>
             <Modal.Title>{historyUser?.username}님의 접속 이력</Modal.Title>
@@ -343,7 +344,7 @@ function App() {
                 <ul>
                   {loginHistory.map((item, idx) => (
                     <li key={idx + loginHistoryIndex}>
-                      {item.time} - {item.clientId || ""} - {item.ip || ""}
+                      {new Date(item.time).toISOString()} - {item.clientId || ""} - {item.ipAddress || ""} - {item.type}
                     </li>
                   ))}
                 </ul>
