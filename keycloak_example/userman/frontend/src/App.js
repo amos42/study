@@ -108,8 +108,12 @@ function App() {
   // 수정 버튼 클릭 핸들러
   const handleEditClick = (user) => {
     setSelectedUser(user);
-    // 기존 속성이 없으면 빈 객체로 시작
-    setEditAttributes(user.attributes ? { ...user.attributes } : {});
+    setEditAttributes({
+      email: user.email || "",
+      enabled: user.enabled,
+      company: user.attributes?.company?.[0] || "",
+      department: user.attributes?.department?.[0] || "",
+    });
     setShowModal(true);
     setError("");
     setSuccess("");
@@ -123,27 +127,39 @@ function App() {
 
   // 속성 변경 핸들러
   const handleAttributeChange = (key, value) => {
-    if (key === "enabled") {
-      setEditAttributes((prev) => ({ ...prev, [key]: !prev[key] }));
-    } else {
-      setEditAttributes((prev) => ({ ...prev, [key]: value }));
-    }
+    setEditAttributes((prev) => ({ ...prev, [key]: value }));
   };
 
   // 속성 저장 핸들러
   const handleSaveChanges = async () => {
     if (!selectedUser) return;
 
+    // 이메일 유효성 검사
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$/;
+    if (!emailRegex.test(editAttributes.email)) {
+      setError("유효하지 않은 이메일 형식입니다.");
+      return;
+    }
+    setError(""); // 성공 시 에러 메시지 초기화
+
     try {
-      await axiosInstance.put(`/api/users/${selectedUser.id}`, {
-        email: editAttributes.email,
-        attributes: editAttributes,
-      });
-      setSuccess("사용자 속성이 성공적으로 저장되었습니다.");
+      const { email, enabled, company, department } = editAttributes;
+      const payload = {
+        email,
+        enabled,
+        attributes: {
+          company: [company],
+          department: [department],
+        },
+      };
+
+      await axiosInstance.put(`/api/users/${selectedUser.id}`, payload);
+
+      setSuccess("사용자 정보가 성공적으로 업데이트되었습니다.");
       handleCloseModal();
-      fetchUsers(); // 목록 새로고침
+      fetchUsers(userPage); // 현재 페이지의 사용자 목록 새로고침
     } catch (err) {
-      setError("속성 저장에 실패했습니다.");
+      setError("사용자 정보 업데이트에 실패했습니다.");
       console.error(err);
     }
   };
@@ -278,7 +294,7 @@ function App() {
                 <Form.Label>e-mail</Form.Label>
                 <Form.Control
                   type="text"
-                  value={selectedUser?.email}
+                  value={editAttributes.email}
                   onChange={(e) =>
                     handleAttributeChange("email", e.target.value)
                   }
@@ -308,7 +324,7 @@ function App() {
                 <Form.Check
                   type="checkbox"
                   label="Enabled"
-                  checked={selectedUser?.enabled}
+                  checked={editAttributes.enabled}
                   onChange={(e) =>
                     handleAttributeChange("enabled", e.target.checked)
                   }
