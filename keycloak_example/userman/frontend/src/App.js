@@ -13,7 +13,7 @@ import {
 import keycloak from "./keycloak";
 
 // 백엔드 API 주소
-const API_URL = "http://localhost:9000";
+const API_URL = "http://localhost:8000";
 
 // 인증된 axios 인스턴스 생성
 const axiosInstance = axios.create({
@@ -26,6 +26,7 @@ axiosInstance.interceptors.request.use((config) => {
 });
 
 function App() {
+  const [userInfo, setUserInfo] = useState({});
   const [users, setUsers] = useState([]);
   const [active_users, setActiveUsers] = useState(0);
   // Pagination state for user list
@@ -90,6 +91,11 @@ function App() {
 
   // 컴포넌트가 마운트될 때 사용자 목록을 불러옵니다.
   useEffect(() => {
+    keycloak.loadUserProfile().then(u => {
+      //console.log(u);
+      setUserInfo(u);
+    });
+   
     fetchUsers();
   }, []);
 
@@ -111,6 +117,7 @@ function App() {
     setEditAttributes({
       email: user.email || "",
       enabled: !!user.enabled,
+      tenant_id: user.attributes?.tenant_id?.[0] || "",
       company: user.attributes?.company?.[0] || "",
       department: user.attributes?.department?.[0] || "",
     });
@@ -143,11 +150,12 @@ function App() {
     setError(""); // 성공 시 에러 메시지 초기화
 
     try {
-      const { email, enabled, company, department } = editAttributes;
+      const { email, enabled, tenant_id, company, department } = editAttributes;
       const payload = {
         email,
         enabled,
         attributes: {
+          tenant_id: [tenant_id],
           company: [company],
           department: [department],
         },
@@ -186,7 +194,7 @@ function App() {
           <Navbar.Collapse className="justify-content-end">
             <Nav>
               <Nav.Link>
-                Welcome, {keycloak.tokenParsed?.preferred_username}
+                Welcome, {keycloak.tokenParsed?.preferred_username} (Tenant: {userInfo?.attributes?.tenant_id})
               </Nav.Link>
               <Button variant="outline-light" onClick={handleLogout}>
                 Logout
@@ -221,7 +229,7 @@ function App() {
                 className={user.enabled === false ? "disabled-row" : ""}
               >
                 <td>{user.id}</td>
-                <td
+                  <td
                   style={{ color: user.enabled === false ? "red" : "inherit" }}
                 >
                   {user.username}
@@ -297,6 +305,16 @@ function App() {
                   value={editAttributes.email}
                   onChange={(e) =>
                     handleAttributeChange("email", e.target.value)
+                  }
+                />
+              </Form.Group>
+              <Form.Group key="tenant_id" className="mb-3">
+                <Form.Label>Tenant</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={editAttributes.tenant_id}
+                  onChange={(e) =>
+                    handleAttributeChange("tenant_id", e.target.value)
                   }
                 />
               </Form.Group>

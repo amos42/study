@@ -36,8 +36,7 @@
             "cwd":"${workspaceFolder}/userman/backend",
             "args": [
                 "main:app",
-                "--reload",
-                "--port", "9000"
+                "--reload"
             ],
             "jinja": true
         }
