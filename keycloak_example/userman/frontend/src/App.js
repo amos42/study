@@ -37,7 +37,7 @@ function App() {
   const [editAttributes, setEditAttributes] = useState({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
+  const [showTenantModal, setShowTenantModal] = useState(false);
   // 로그인 이력 관련 상태
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [loginHistory, setLoginHistory] = useState([]);
@@ -137,6 +137,23 @@ function App() {
     setEditAttributes((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleTenantChanges = async (e) => {
+    const newTenant = e.target.value;
+    userInfo.attributes.tenant_id = newTenant;
+    console.log(userInfo);
+    const payload = {
+      email: userInfo.email,
+      enabled: 'true',
+      attributes: {
+        company: userInfo.attributes.company,
+        department: userInfo.attributes.department,
+        tenant_id: newTenant,
+        tenants: userInfo.attributes.tenants,
+      },
+    };
+    await axiosInstance.put(`/api/users/${userInfo.id}`, payload);
+  }
+
   // 속성 저장 핸들러
   const handleSaveChanges = async () => {
     if (!selectedUser) return;
@@ -193,7 +210,7 @@ function App() {
           <Navbar.Toggle />
           <Navbar.Collapse className="justify-content-end">
             <Nav>
-              <Nav.Link>
+              <Nav.Link onClick={() => setShowTenantModal(!showTenantModal)}>
                 Welcome, {keycloak.tokenParsed?.preferred_username} (Tenant: {userInfo?.attributes?.tenant_id})
               </Nav.Link>
               <Button variant="outline-light" onClick={handleLogout}>
@@ -359,6 +376,29 @@ function App() {
             </Button>
           </Modal.Footer>
         </Modal>
+
+        {/* 테넌트 선택 모달 */}
+        <Modal show={showTenantModal} onHide={() => setShowTenantModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>테넌트 선택</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form.Select value={userInfo?.attributes?.tenant_id} onChange={handleTenantChanges}>
+              {userInfo?.attributes?.tenants?.map((tenant, index) => (
+                <option key={index} value={tenant}>{tenant}</option>
+              ))}
+            </Form.Select>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowTenantModal(false)}>
+              닫기
+            </Button>
+            <Button variant="primary" onClick={() => setShowTenantModal(false)}>
+              선택
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
         {/* 로그인 이력 모달 */}
         <Modal
           show={showHistoryModal}
