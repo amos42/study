@@ -140,6 +140,46 @@ async def update_user_attributes(user_id: str, user_attributes: UserAttributes, 
     except KeycloakError as e:
         raise HTTPException(status_code=e.response_code, detail=str(e))
 
+@app.put("/api/users/{user_id}/tenant")
+async def update_user_tenants(user_id: str, tenants: list[str], current_user = Depends(get_current_user)):
+    """특정 사용자의 속성을 업데이트합니다."""
+    keycloak_admin = get_keycloak_admin(current_user.token)
+    try:
+        # 사용자 정보 페이로드 구성
+        user_info = keycloak_admin.get_user(user_id=user_id)
+        current_tenant = user_info["attributes"]["tenant_id"][0]
+        user_info["attributes"]["tenants"] = tenants
+        if current_tenant not in tenants:
+            print(f"현재 테넌트 {current_tenant}가 {tenants}에 포함되지 못 해서 무효합니다.")
+            user_info["attributes"]["tenant_id"] = None
+            current_tenant = None
+        keycloak_admin.update_user(user_id=user_id, payload=user_info)
+        if not current_tenant:
+            print("무효한 테넌트이기 때문에 로그아웃 합니다.")
+            keycloak_admin.user_logout(user_id=user_id)    
+            # requests.delete(f"http://localhost:8080/admin/realms/master/sessions/{current_user.session_id}?isOffline=false",
+            #                         headers={"Authorization": f"Bearer {current_user.token}"})
+            # requests.post(f"http://localhost:8080/admin/realms/master/users/{user_id}/logout",
+            #                 headers={"Authorization": f"Bearer {current_user.token}"})
+            # keycloak_fe_openid.logout(current_user.token)
+        return {"message": f"사용자 {user_id}의 속성이 성공적으로 업데이트되었습니다."}
+    except KeycloakError as e:
+        raise HTTPException(status_code=e.response_code, detail=str(e))
+
+@app.put("/api/users/{user_id}/tenant/{tenant_id}")
+async def update_user_tenant_id(user_id: str, tenant_id: str, current_user = Depends(get_current_user)):
+    """특정 사용자의 속성을 업데이트합니다."""
+    keycloak_admin = get_keycloak_admin(current_user.token)
+    try:
+        user_info = keycloak_admin.get_user(user_id=user_id)
+        user_info["attributes"]["tenant_id"] = tenant_id
+        keycloak_admin.update_user(user_id=user_id, payload=user_info)
+        # requests.delete(f"http://localhost:8080/admin/realms/master/sessions/{session_id}?isOffline=false",
+        #                         headers={"Authorization": f"Bearer {current_user.token}"})        
+        return {"message": f"사용자 {user_id}의 속성이 성공적으로 업데이트되었습니다."}
+    except KeycloakError as e:
+        raise HTTPException(status_code=e.response_code, detail=str(e))
+
 @app.get("/api/users/{user_id}/login-history")
 async def get_user_login_history(
     user_id: str,

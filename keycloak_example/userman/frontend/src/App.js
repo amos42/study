@@ -9,6 +9,7 @@ import {
   Alert,
   Navbar,
   Nav,
+  ListGroup,
 } from "react-bootstrap";
 import keycloak from "./keycloak";
 
@@ -44,6 +45,7 @@ function App() {
   const [loginHistoryIndex, setLoginHistoryIndex] = useState(1);
   const [historyUser, setHistoryUser] = useState(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [tenantId, setTenantId] = useState('');
   // Pagination state for login history
   const HISTORY_PAGE_SIZE = 10;
 
@@ -64,6 +66,9 @@ function App() {
     } catch (err) {
       setLoginHistory([]);
       setError("로그인 이력을 불러오는 데 실패했습니다.");
+      if (err.status === 401) {
+        keycloak.logout();
+      }
     } finally {
       setIsHistoryLoading(false);
     }
@@ -82,6 +87,9 @@ function App() {
     } catch (err) {
       setError("사용자 목록을 불러오는 데 실패했습니다.");
       console.error(err);
+      if (err.status === 401) {
+        keycloak.logout();
+      }
     }
   };
 
@@ -94,6 +102,8 @@ function App() {
     keycloak.loadUserProfile().then(u => {
       //console.log(u);
       setUserInfo(u);
+      // console.log(u.attributes.tenant_id[0]);
+      setShowTenantModal(!u.attributes.tenant_id);
     });
    
     fetchUsers();
@@ -138,7 +148,7 @@ function App() {
   };
 
   const handleTenantChanges = async (e) => {
-    const newTenant = e.target.value;
+    const newTenant = tenantId
     userInfo.attributes.tenant_id = newTenant;
     console.log(userInfo);
     const payload = {
@@ -151,7 +161,14 @@ function App() {
         tenants: userInfo.attributes.tenants,
       },
     };
-    await axiosInstance.put(`/api/users/${userInfo.id}`, payload);
+    try {
+      await axiosInstance.put(`/api/users/${userInfo.id}`, payload);
+    } catch (err) {
+      // console.log(err)
+      if (err.status === 401) {
+        keycloak.logout();
+      }
+    }
   }
 
   // 속성 저장 핸들러
@@ -186,6 +203,9 @@ function App() {
     } catch (err) {
       setError("사용자 정보 업데이트에 실패했습니다.");
       console.error(err);
+      if (err.status_ === 401) {
+        keycloak.logout();
+      }
     }
   };
 
@@ -210,7 +230,7 @@ function App() {
           <Navbar.Toggle />
           <Navbar.Collapse className="justify-content-end">
             <Nav>
-              <Nav.Link onClick={() => setShowTenantModal(!showTenantModal)}>
+              <Nav.Link onClick={() => {setTenantId(userInfo?.attributes?.tenant_id?.[0]); setShowTenantModal(!showTenantModal);}}>
                 Welcome, {keycloak.tokenParsed?.preferred_username} (Tenant: {userInfo?.attributes?.tenant_id})
               </Nav.Link>
               <Button variant="outline-light" onClick={handleLogout}>
@@ -304,17 +324,6 @@ function App() {
           </Modal.Header>
           <Modal.Body>
             <Form>
-              {/* {Object.entries(editAttributes).map(([key, value]) => (
-                                <Form.Group key={key} className="mb-3">
-                                    <Form.Label>{key}</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        value={value}
-                                        onChange={(e) => handleAttributeChange(key, e.target.value)}
-                                    />
-                                </Form.Group>
-                            ))} */}
-
               <Form.Group key="e-mail" className="mb-3">
                 <Form.Label>e-mail</Form.Label>
                 <Form.Control
@@ -378,22 +387,22 @@ function App() {
         </Modal>
 
         {/* 테넌트 선택 모달 */}
-        <Modal show={showTenantModal} onHide={() => setShowTenantModal(false)} centered>
+        <Modal show={showTenantModal} onHide={() => setShowTenantModal(false)} centered backdrop={userInfo?.attributes?.tenant_id?.[0]? true: "static"}>
           <Modal.Header closeButton>
             <Modal.Title>테넌트 선택</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <Form.Select value={userInfo?.attributes?.tenant_id} onChange={handleTenantChanges}>
-              {userInfo?.attributes?.tenants?.map((tenant, index) => (
-                <option key={index} value={tenant}>{tenant}</option>
+            <ListGroup>
+               {userInfo?.attributes?.tenants?.map((tenant, index) => (                
+                <ListGroup.Item id={index} action active={tenantId===tenant} onClick={()=>setTenantId(tenant)}>{tenant}</ListGroup.Item>
               ))}
-            </Form.Select>
+            </ListGroup>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowTenantModal(false)}>
+            <Button variant="secondary" onClick={() => setShowTenantModal(false)} hidden={!userInfo?.attributes?.tenant_id?.[0]}>
               닫기
             </Button>
-            <Button variant="primary" onClick={() => setShowTenantModal(false)}>
+            <Button variant="primary" onClick={(e) => { handleTenantChanges(e); setShowTenantModal(false);}} disabled={!tenantId}>
               선택
             </Button>
           </Modal.Footer>
