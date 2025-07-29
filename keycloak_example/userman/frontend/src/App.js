@@ -388,7 +388,7 @@ function App() {
 
         {/* 테넌트 선택 모달 */}
         <Modal show={showTenantModal} onHide={() => setShowTenantModal(false)} centered backdrop={userInfo?.attributes?.tenant_id?.[0]? true: "static"}>
-          <Modal.Header closeButton>
+          <Modal.Header closeButton={!!userInfo?.attributes?.tenant_id?.[0]}>
             <Modal.Title>테넌트 선택</Modal.Title>
           </Modal.Header>
           <Modal.Body>
