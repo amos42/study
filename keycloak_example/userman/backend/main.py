@@ -57,7 +57,8 @@ class UserInfo(BaseModel):
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInfo:
     """프론트엔드에서 받은 Keycloak 토큰을 검증하고 사용자 정보를 반환합니다."""
     try:
-        user_info = keycloak_openid.userinfo(token)
+        # user_info = keycloak_openid.userinfo(token)
+        user_info = keycloak_openid.decode_token(token)
         return UserInfo(user_info=user_info, token=token)
     except KeycloakError as e:
         raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
@@ -217,4 +218,4 @@ async def get_user_login_history(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=9000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

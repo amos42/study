@@ -50,6 +50,20 @@ function App() {
   // Pagination state for login history
   const HISTORY_PAGE_SIZE = 10;
 
+
+  // 로그인 이력 불러오기 (페이지네이션 적용)
+  const fetchApi = async (method, url, params) => {
+    setIsHistoryLoading(true);
+    try {
+      return await axiosInstance.request({method, url, params});
+    } catch (err) {
+      if (err.status === 401) {
+        keycloak.logout();
+      }
+      throw err;
+    }
+  };
+  
   // 로그인 이력 불러오기 (페이지네이션 적용)
   const fetchLoginHistory = async (userId, start = 1) => {
     setIsHistoryLoading(true);
@@ -105,6 +119,8 @@ function App() {
       setUserInfo(u);
       setTenantId(u.attributes.tenant_id?.[0]);
       setShowTenantModal(!u.attributes.tenant_id);
+    }).catch(err =>{
+      console.log(err);
     });
    
     fetchUsers();
@@ -169,6 +185,8 @@ function App() {
       if (err.status === 401) {
         keycloak.logout();
       }
+    } finally {
+      setTenantId(newTenant);
     }
   }
 
