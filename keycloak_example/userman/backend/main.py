@@ -20,7 +20,6 @@ KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
 KEYCLOAK_CLIENT_UUID = os.getenv("KEYCLOAK_CLIENT_UUID")
 KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 KEYCLOAK_ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USER")
-KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD")
 KEYCLOAK_FRONTEND_CLIENT_ID = os.getenv("KEYCLOAK_FRONTEND_CLIENT_ID")
 
 # FastAPI 앱 생성
@@ -65,21 +64,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInfo:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-def get_keycloak_admin(authorization: str | None = None) -> KeycloakAdmin:
+def get_keycloak_admin() -> KeycloakAdmin:
     """Keycloak Admin 클라이언트를 생성하고 반환합니다."""
     global keycloak_admin_data
     try:
         if keycloak_admin_data:
             return keycloak_admin_data
         keycloak_admin_data = KeycloakAdmin(
-            server_url=KEYCLOAK_SERVER_URL,
-            username=KEYCLOAK_ADMIN_USER,
-            password=KEYCLOAK_ADMIN_PASSWORD,
-            realm_name=KEYCLOAK_REALM_NAME,
-            client_id=KEYCLOAK_CLIENT_ID,
-            client_secret_key=KEYCLOAK_CLIENT_SECRET,
-            token={"access_token":authorization, "expires_in": 0},
-            verify=True
+            server_url = KEYCLOAK_SERVER_URL,
+            username = KEYCLOAK_ADMIN_USER,
+            realm_name = KEYCLOAK_REALM_NAME,
+            client_id = KEYCLOAK_CLIENT_ID,
+            client_secret_key = KEYCLOAK_CLIENT_SECRET,
+            verify = True
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Keycloak 연결 실패: {str(e)}")
@@ -98,7 +95,7 @@ async def get_users(
     page_size: int = Query(10, ge=1, le=100)
 ):
     """모든 사용자의 목록을 페이지네이션하여 반환합니다."""
-    keycloak_admin = get_keycloak_admin(current_user.token)
+    keycloak_admin = get_keycloak_admin()
     try:
         start = (page - 1) * page_size
         users = keycloak_admin.get_users({"first": start, "max": page_size})
@@ -108,6 +105,9 @@ async def get_users(
         sessions = keycloak_admin.get_client_all_sessions(client_id=KEYCLOAK_CLIENT_UUID)
         active_user_ids = set(session['userId'] for session in sessions)
         active_users = len(active_user_ids)
+        # users = []
+        # total_users = 0
+        # active_users = 0
 
         return {
             "total_users": total_users,
@@ -122,7 +122,7 @@ async def get_users(
 @app.get("/api/users/{user_id}")
 async def get_user_details(user_id: str, current_user = Depends(get_current_user)):
     """특정 사용자의 상세 정보를 반환합니다."""
-    keycloak_admin = get_keycloak_admin(current_user.token)
+    keycloak_admin = get_keycloak_admin()
     try:
         user = keycloak_admin.get_user(user_id)
         return user
@@ -132,7 +132,7 @@ async def get_user_details(user_id: str, current_user = Depends(get_current_user
 @app.put("/api/users/{user_id}")
 async def update_user_attributes(user_id: str, user_attributes: UserAttributes, current_user = Depends(get_current_user)):
     """특정 사용자의 속성을 업데이트합니다."""
-    keycloak_admin = get_keycloak_admin(current_user.token)
+    keycloak_admin = get_keycloak_admin()
     try:
         # 사용자 정보 페이로드 구성
         payload = {"email": user_attributes.email, "enabled": user_attributes.enabled, "attributes": user_attributes.attributes}
@@ -144,7 +144,7 @@ async def update_user_attributes(user_id: str, user_attributes: UserAttributes, 
 @app.put("/api/users/{user_id}/tenant")
 async def update_user_tenants(user_id: str, tenants: list[str], current_user = Depends(get_current_user)):
     """특정 사용자의 속성을 업데이트합니다."""
-    keycloak_admin = get_keycloak_admin(current_user.token)
+    keycloak_admin = get_keycloak_admin()
     try:
         # 사용자 정보 페이로드 구성
         user_info = keycloak_admin.get_user(user_id=user_id)
@@ -170,7 +170,7 @@ async def update_user_tenants(user_id: str, tenants: list[str], current_user = D
 @app.put("/api/users/{user_id}/tenant/{tenant_id}")
 async def update_user_tenant_id(user_id: str, tenant_id: str, current_user = Depends(get_current_user)):
     """특정 사용자의 속성을 업데이트합니다."""
-    keycloak_admin = get_keycloak_admin(current_user.token)
+    keycloak_admin = get_keycloak_admin()
     try:
         user_info = keycloak_admin.get_user(user_id=user_id)
         user_info["attributes"]["tenant_id"] = tenant_id
@@ -193,7 +193,7 @@ async def get_user_login_history(
     (Keycloak 세션 정보를 기반으로 하며, 실제 로그인 이력과는 다를 수 있습니다.)
     """
     try:
-        keycloak_admin = get_keycloak_admin(current_user.token)
+        keycloak_admin = get_keycloak_admin()
         events = keycloak_admin.get_events({"user":user_id, "client":KEYCLOAK_FRONTEND_CLIENT_ID, "type":["LOGIN","LOGOUT","LOGIN_ERROR"], "direction":"desc", "first": start, "max": page_size})
         # response = requests.get(f"http://localhost:8080/admin/realms/master/events?user={user_id}&type=LOGIN&type=LOGOUT&type=LOGIN_ERROR&first={start}&max={page_size}",
         #                         headers={"Authorization": f"Bearer {current_user.token}"})
