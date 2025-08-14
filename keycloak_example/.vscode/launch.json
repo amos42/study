@@ -21,7 +21,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
-            "cwd":"${workspaceFolder}/simple/server",
+            "cwd":"${workspaceFolder}/simple/server/src",
             "args": [
                 "main:app",
                 "--reload"
