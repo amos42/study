@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [        
         {
-            "name": "Launch Webapp",
+            "name": "Launch Simple Webapp",
             "type": "node",
             "program": "server.js",
-            "cwd": "${workspaceFolder}/webapp",
+            "cwd": "${workspaceFolder}/simple/webapp",
             "request": "launch",
             "runtimeExecutable": "npm",
             "runtimeArgs": ["start", "debug"],
@@ -17,11 +17,11 @@
             ]
         },
         {
-            "name": "Launch Server",
+            "name": "Launch Simple Server",
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
-            "cwd":"${workspaceFolder}/server",
+            "cwd":"${workspaceFolder}/simple/server",
             "args": [
                 "main:app",
                 "--reload"
