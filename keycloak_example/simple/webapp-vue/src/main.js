@@ -6,7 +6,7 @@ import Keycloak from 'keycloak-js';
 const initOptions = {
   url: 'http://localhost:8080/',
   realm: 'master',
-  clientId: 'test2'
+  clientId: 'test-fe'
 };
 
 const keycloak = new Keycloak(initOptions);

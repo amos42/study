@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel
-from auth.auth import User, get_user_from_token
+from ..auth.auth import User, get_user_from_token
 import requests
 
 router = APIRouter()

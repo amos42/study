@@ -1,7 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, HTTPBearer
-from keycloak import KeycloakOpenID
+from keycloak.keycloak_openid import KeycloakOpenID
 from typing import Optional, Dict
 
 from pydantic import BaseModel
@@ -20,9 +20,9 @@ router = APIRouter()
 
 keycloak_openid = KeycloakOpenID(
     server_url="http://localhost:8080/",
-    client_id="test",
+    client_id="test-be",
     realm_name="master",
-    # client_secret_key="8QwyK9v2Mt5oVd7wQSjOywqmKZUOCUHg"
+    client_secret_key="OTP3HWboqvt9AymQEQtrYmXW4mXHVioh"
 )
 
 #oauth_scheme = OAuth2PasswordBearer(tokenUrl="token")

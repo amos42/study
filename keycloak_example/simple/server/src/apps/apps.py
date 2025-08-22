@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Header
 from typing import Any, Dict
-from auth.auth import get_user_from_token
+from ..auth.auth import get_user_from_token
 import requests
 
 router = APIRouter()
