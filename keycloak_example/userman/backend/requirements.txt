@@ -4,3 +4,4 @@ python-keycloak
 python-dotenv
 fastapi-cors
 PyJWT
+pytest

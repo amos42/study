@@ -174,3 +174,10 @@ keycloak.init({ onLoad: 'login-required' }).then(authenticated => {
     console.error('인증 초기화 실패');
   });
 ```
+
+
+pytest를 위해서는 디상 디렉토리를 등록해 준다.
+
+```
+set PYTHONPATH=%cd%
+```
