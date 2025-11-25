@@ -10,17 +10,6 @@ from uuid import UUID
 
 import pytest
 
-from genai.base.common.exception import ServerException
-from genai.base.common.pagination import Page
-from genai.base.common.pagination import PaginationParams
-from genai.system_admin.adapter.outbound.persistence.database_system_notice_repository import (
-    DatabaseSystemNoticeRepository,
-)
-from genai.system_admin.adapter.outbound.persistence.table.notice_table import NoticeTable
-from genai.system_admin.application.condition import NoticeConditionStatus
-from genai.system_admin.application.condition import NoticeSearchConditionParams
-from genai.system_admin.domain.notice_domain import NoticeDomain
-
 
 def _make_sample_data(notice_id: int = 1, create_at: datetime = None, delay_day: int = 0) -> NoticeDomain:
     now = create_at if create_at else datetime.now(UTC)
