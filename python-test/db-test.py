@@ -1,59 +1,80 @@
-from sqlalchemy import ARRAY, Sequence, Table, create_engine, Column, Integer, String, MetaData, text
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import (
+    Sequence,
+    Table,
+    create_engine,
+    Column,
+    Integer,
+    String,
+    MetaData,
+    # text,
+)
+from sqlalchemy.orm import declarative_base, DeclarativeMeta
 from sqlalchemy.orm import Session
 from sqlalchemy.schema import CreateTable
- 
- 
+
+
 Base = declarative_base()
- 
-class MyTest(Base):
-    __tablename__ = 'test'
- 
-    id = Column(Integer, primary_key=True, autoincrement=True)  # postgresql의 경우엔 SERIAL 타입으로 생성됨
-    # id = Column(Integer, Sequence('mytest_id_seq'), primary_key=True, index=True)
-    name = Column(String)
-    password = Column(String)
-    tags = Column(ARRAY(String))
- 
- 
-# 데이터베이스 엔진을 생성합니다.
+
+
+class MyTestTable(Base):
+    __tablename__ = "test"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True) # postgresql의 경우엔 SERIAL 타입으로 생성됨
+    # id = Column(Integer, Sequence('test_id_seq'), primary_key=True, index=True, autoincrement=True)
+    title = Column(String)
+    contents = Column(String)
+    # tags = Column(ARRAY(String))
+
+
+# 데이터베이스 엔진을 생성한다.
 # engine = create_engine('postgresql://test:password@localhost:5432/test_db')
 # engine = create_engine('sqlite:///:memory:')
-engine = create_engine('duckdb:///:memory:')
- 
-# 테이블을 생성합니다.
+engine = create_engine("duckdb:///:memory:")
+
+# 테이블을 생성한다.
 # Base.metadata.create_all(engine)
- 
-cloned_table = Table(
-    MyTest.__tablename__,
-    MetaData(),  # 새로운 메타데이터로 충돌 방지
-    *[
-        # col._copy() if col.name != "id" else Column("id", Integer, Sequence('mytest_id_seq'), primary_key=True, index=True, autoincrement=True)
-        col._copy() if col.name != "id" else Column("id", Integer, Sequence('mytest_id_seq'), primary_key=True, index=True, autoincrement=True, server_default=text("nextval('mytest_id_seq')"))
-        for col in MyTest.__table__.columns
-    ]
-)
- 
-print(CreateTable(cloned_table))
- 
+
+# primary_key + autoincrement 필드를 교체하여 clone table을 생성한다.
+def _make_cloned_table(table_type: Table | type[DeclarativeMeta], pk_fields: list[str] | None = None) -> Table:
+    if isinstance(table_type, Table):
+       table = table_type
+    elif issubclass(type(table_type), DeclarativeMeta):
+       table = table_type.__table__
+    else:
+       return None
+    cols: list[Column] = []
+    for col in table.columns:
+        if (pk_fields and col.name in pk_fields) or (table.autoincrement_column == col and type(col.default) is not Sequence):
+            col.default = Sequence(f"{table.name}_{col.name}_seq")
+            # col.server_default = text(f"nextval('{table.name}_{col.name}_seq')")
+        cols.append(col._copy())
+    cloned_table = Table(
+        table.name,
+        MetaData(),  # 새로운 메타데이터로 충돌 방지
+        *cols
+    )
+    return cloned_table
+
+cloned_table = _make_cloned_table(MyTestTable)
+# cloned_table = _make_cloned_table(MyTestTable.__table__)
+
+# table = MyTestTable.__table__
 table = cloned_table
-# table = MyTest.__table__
+print(CreateTable(table))
+
 table.drop(bind=engine, checkfirst=True)
-# seq = Sequence('mytest_id_seq')
-# seq.create(bind=engine)  # 시퀀스 먼저 생성
 table.create(bind=engine)
- 
- 
-# 세션을 생성합니다.
+
+# 세션을 생성한다.
 with Session(engine) as session:
-    # # 사용자 데이터를 삽입합니다.
-    user = MyTest(name="홍길동", password="password")
-    session.add(user)
-    user = MyTest(name="홍길동2", password="password")
-    session.add(user)
+    # 데이터를 삽입한다.
+    data = MyTestTable(title="테스트#1", contents="테스트 데이터 1")
+    session.add(data)
+    data = MyTestTable(title="테스트#2", contents="테스트 데이터 2")
+    session.add(data)
     session.commit()
- 
-    # 사용자 데이터를 조회합니다.
-    users = session.query(MyTest).all()
-    for user in users:
-        print(user.id, user.name, user.password)
+
+    # 데이터를 조회한다.
+    datas = session.query(MyTestTable).all()
+    for data in datas:
+        print(f'{data.id}: {data.title} "{data.contents}"')
