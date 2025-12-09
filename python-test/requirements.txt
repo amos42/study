@@ -1,5 +1,6 @@
 langchain
 openai
+ollama
 chromadb
 mcp
 langchain_openai
@@ -7,3 +8,5 @@ langchain_chroma
 langchain_mcp_adapters
 langgraph
 sentence-transformers
+unstructured
+langchain-huggingface

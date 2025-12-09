@@ -3,7 +3,8 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain.agents import create_agent
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from langchain.messages import AIMessage
 
 
@@ -29,10 +30,12 @@ async def test_connection():
             print("Tools loaded successfully")
             
             # 모든 도구로 에이전트 생성
-            model = ChatOpenAI(
-                base_url="....",
-                api_key="....",
-                model="....")
+            # model = ChatOpenAI(
+            #     base_url="....",
+            #     api_key="....",
+            #     model="....")
+            model = ChatOllama(model="gemma3:1b")
+
             print("model initialized successfully")
 
             agent = create_agent(model, tools)
