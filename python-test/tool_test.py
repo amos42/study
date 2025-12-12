@@ -20,6 +20,7 @@ from langchain_chroma import Chroma
 from chromadb import HttpClient
 import uvicorn
 import dotenv
+from langchain_community.tools.file_management import WriteFileTool
 
 dotenv.load_dotenv()
 
@@ -134,22 +135,24 @@ def tool_search_vector_db(query: str, k: int = 2) -> list:
         lst = [""]
     return lst
 
-@tool
-def tool_write_text_file(filename: str, content: str):
-    """문자열 컨텐츠를 실제 파일로 저장한다. (인코딩: UTF-8)
+# @tool
+# def tool_write_text_file(filename: str, content: str):
+#     """문자열 컨텐츠를 실제 파일로 저장한다. (인코딩: UTF-8)
 
-    Args:
-        filename: 저장할 파일명
-        content: 텍스트 데이터
-    """
+#     Args:
+#         filename: 저장할 파일명
+#         content: 텍스트 데이터
+#     """
 
-    with open(filename, "w", encoding="utf-8") as file:
-        file.write(content)
-        file.flush()
-        os.fsync(file.fileno())
+#     with open(filename, "w", encoding="utf-8") as file:
+#         file.write(content)
+#         file.flush()
+#         os.fsync(file.fileno())
 
 def _format_docs(docs):
     return "\n\n---\n\n".join(d.page_content for d in docs)
+
+write_tool = WriteFileTool(root_dir="d:/test")
 
 class DataMigrate:
     def __init__(self):
@@ -160,7 +163,7 @@ class DataMigrate:
                  tool_get_table_info,
                  tool_get_db_record,
                  tool_search_vector_db,
-                 tool_write_text_file]
+                 write_tool]
         self.agent = create_agent(self.llm, tools=tools)
         retriever = vector_db.as_retriever(search_kwargs={"k": 4})
         prompt = PromptTemplate(
