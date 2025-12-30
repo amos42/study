@@ -1,0 +1,91 @@
+### nouveau modules blacklist
+# vi /etc/modprobe.d/disable-nouveau.conf 
+#Add Line
+
+blacklist nouveau
+options nouveau modeset=0
+
+# dkms install
+# yum install dkms-3.0.13-1.el8.noarch.rpm
+ 
+
+# dracut -f -v
+# shutdown -r now
+# lsmod | grep nouveau
+
+### RHEL Repository
+# cat /etc/yum.repos.d/base.repo 
+[base]
+name=base
+baseurl=file:///media/RHEL810/BaseOS
+gpgcheck=0
+enabled=1
+
+[appstream]
+name=appstream
+baseurl=file:///media/RHEL810/AppStream
+gpgcheck=0
+enabled=1
+
+### cuda driver install
+# sh cuda_12.9.0_575.51.03_linux.run
+
+# Library Path 
+vi ~/.bash_profile
+
+PATH=/usr/local/cuda-12.9/bin${PATH:+:${PATH}}
+LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+export PATH
+export LD_LIBRARY_PATH
+
+# check 
+# echo $PATH
+# echo $LD_LIBRARY_PATH
+
+### NVIDIA Container Toolkit Install
+
+# cat /etc/yum.repos.d/nvidia-container-toolkit.repo 
+[nvidia-container-toolkit]
+name=nvidia-container-toolkit
+baseurl=file:///root/work/nvidia-container-toolkit
+enabled=1
+gpgcheck=0
+
+# export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.18.1-1
+# dnf install -y \
+      nvidia-container-toolkit-${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+      nvidia-container-toolkit-base-${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+      libnvidia-container-tools-${NVIDIA_CONTAINER_TOOLKIT_VERSION} \
+      libnvidia-container1-${NVIDIA_CONTAINER_TOOLKIT_VERSION}
+
+# nvidia-ctk runtime configure --runtime=docker
+# systemctl restart docker
+
+### Other Setting
+Link : https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+
+# docker-ce install
+
+# cat /etc/yum.repos.d/docker.repo 
+[docker-ce-stable]
+name=Docker CE Stable - $basearch
+baseurl=file:///root/work/docker-ce
+enabled=1
+gpgcheck=0
+gpgkey=https://download.docker.com/linux/rhel/gpg
+
+# dnf remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine \
+                  podman \
+                  runc
+
+# dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+# systemctl enable --now docker
+# docker run hello-world
+
