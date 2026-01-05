@@ -5,6 +5,7 @@ langchain-community
 langchain-classic
 openai
 chromadb
+uvicorn
 mcp
 langchain_openai
 langchain_chroma
