@@ -15,3 +15,4 @@ unstructured
 sentence_transformers
 huggingface_hub
 huggingface_hub[hf_xet]
+psycopg2
