@@ -1,0 +1,10 @@
+char* get_team_members()
+
+팀의 멤버들 목록을 얻는 함수.
+
+Args:
+
+Result: 팀원들 이름의 문자열 배열
+
+헤더: score_common_lib.h
+라이브러리: libscore_common.a
