@@ -1,0 +1,12 @@
+int team_login(char *id, char *password)
+
+로그인하는 함수.
+
+Args:
+  id : 로그인 아이디
+  password : 암호
+
+Result: 성공시 0, 실패시 -1""",
+
+헤더: score_common_lib.h
+라이브러리: libscore_common.a
